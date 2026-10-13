@@ -140,12 +140,11 @@ D:/Project/jastip/jastipin/
 
 ---
 
-## Blocker / Tindakan Manual Wajib
+## Status Integrasi Supabase
 
-1. Buka **Supabase → SQL Editor → New query**.
-2. Buka file `supabase/migrations/20261013_add_status_bayar_and_updates.sql`.
-3. Salin seluruh SQL file tersebut, paste ke SQL Editor, lalu jalankan.
-4. Tes alur: proposal → ACC (isi harga dan qty) → `/admin` → Tandai Sudah Bayar → `/admin/orderan`.
+- Migration `supabase/migrations/20261013_add_status_bayar_and_updates.sql` sudah dijalankan di Supabase SQL Editor (dikonfirmasi Kukuh, 13 Oktober 2026).
+- Kolom `status_bayar`, index, serta policy UPDATE untuk order dan proposal kini seharusnya tersedia.
+- Tes end-to-end aplikasi masih perlu dilakukan: proposal → ACC (isi harga dan qty) → `/admin` → Tandai Sudah Bayar → `/admin/orderan`.
 
 > Dashboard saat ini memakai policy UPDATE anonim agar aksi admin client-side dapat berjalan. Jangan gunakan model akses ini untuk produksi publik jangka panjang; tambahkan autentikasi admin/PIN sebelum menangani data pelanggan secara luas.
 
@@ -162,4 +161,4 @@ git push origin main
 ---
 
 **Last Updated:** 13 Oktober 2026
-**Status:** Workflow proposal, order belum bayar, dan order sudah bayar selesai di kode; menunggu migration Supabase dan tes end-to-end.
+**Status:** Workflow proposal, order belum bayar, dan order sudah bayar siap digunakan; migration Supabase sudah diterapkan, menunggu tes end-to-end.
