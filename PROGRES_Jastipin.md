@@ -27,9 +27,8 @@ Tanggal update: 2026-10-13
 - `.env.example`, `.env.local`
 
 ## Masalah / Catatan Tertunda
-- Wajib jalankan SQL migration di Supabase SQL Editor:
-  `ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS whatsapp text;`
-- Pastikan Environment Variable di Vercel sudah ada: `ADMIN_USERNAME`, `ADMIN_PIN`, `DISCORD_WEBHOOK_URL`.
+- ✅ SQL migration kolom `whatsapp` di tabel `orders` **sudah dijalankan sukses** di Supabase (13 Oktober 2026).
+- ✅ Environment Variable di Vercel sudah ada: `ADMIN_USERNAME`, `ADMIN_PIN`, `DISCORD_WEBHOOK_URL`.
 
 ## Langkah Berikutnya
 - Test live order checkout dan ajukan proposal di domain Vercel untuk verifikasi notifikasi Discord masuk.
