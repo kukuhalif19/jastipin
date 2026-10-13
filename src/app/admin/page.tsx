@@ -120,7 +120,8 @@ export default function AdminPage() {
             <h1 style={{ fontSize: 25, fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>Rekap Pesanan</h1>
             <p style={{ fontSize: 13, color: '#555', fontWeight: 600, margin: '6px 0 0' }}>Daftar belanja per toko dan daftar packing per pemesan.</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link href="/admin/proposals" className="nb-btn nb-btn--secondary">Pengajuan Menu</Link>
             <button type="button" className="nb-btn" onClick={() => void loadOrders()} disabled={loading}>Refresh</button>
             <button type="button" className="nb-btn nb-btn--primary" onClick={exportCsv} disabled={orders.length === 0}>Export CSV</button>
           </div>
