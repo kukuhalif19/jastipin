@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { IconArrowLeft, IconReceipt } from '@/components/Icons'
+import { hitungFee, formatRupiah } from '@/lib/data/products'
 import { supabase } from '@/lib/supabase'
 
 type Proposal = {
@@ -33,7 +34,11 @@ export default function ProposalsPage() {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'rejected'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'rejected'>('pending')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [harga, setHarga] = useState(0)
+  const [qty, setQty] = useState(1)
+  const [submitting, setSubmitting] = useState(false)
 
   const loadProposals = useCallback(async () => {
     setLoading(true)
@@ -71,13 +76,7 @@ export default function ProposalsPage() {
   function exportCsv() {
     const rows = [['Tanggal', 'Nama', 'Alamat', 'Toko', 'Menu Diajukan', 'Status', 'Admin WA']]
     filteredProposals.forEach((p) => rows.push([
-      formatDate(p.created_at),
-      p.nama,
-      p.alamat,
-      p.toko_nama,
-      p.menu_diajukan,
-      p.status,
-      p.wa_target || '-',
+      formatDate(p.created_at), p.nama, p.alamat, p.toko_nama, p.menu_diajukan, p.status, p.wa_target || '-',
     ]))
     const blob = new Blob([rows.map((row) => row.map(csvCell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -86,6 +85,33 @@ export default function ProposalsPage() {
     anchor.download = `rekap-proposals-${new Date().toISOString().slice(0, 10)}.csv`
     anchor.click()
     URL.revokeObjectURL(url)
+  }
+
+  async function approveProposal(proposal: Proposal) {
+    if (!supabase || harga <= 0 || qty < 1) return
+    setSubmitting(true)
+    const fee = hitungFee(harga)
+    const { error: orderError } = await supabase.from('orders').insert({
+      nama: proposal.nama,
+      alamat: proposal.alamat,
+      items: [{ nama: proposal.menu_diajukan, toko: proposal.toko_nama, harga, qty, fee }],
+      total: (harga + fee) * qty,
+      wa_target: proposal.wa_target || 'Admin',
+      status_bayar: 'belum_bayar',
+    })
+    if (!orderError) {
+      const { error: proposalError } = await supabase.from('proposals').update({ status: 'confirmed' }).eq('id', proposal.id)
+      if (proposalError) setError(`Order dibuat, tetapi status proposal gagal diperbarui: ${proposalError.message}`)
+      else { setEditingId(null); void loadProposals() }
+    } else setError(`Gagal membuat order: ${orderError.message}`)
+    setSubmitting(false)
+  }
+
+  async function rejectProposal(id: string) {
+    if (!supabase || !confirm('Tolak proposal ini?')) return
+    const { error: updateError } = await supabase.from('proposals').update({ status: 'rejected' }).eq('id', id)
+    if (updateError) setError(`Gagal menolak proposal: ${updateError.message}`)
+    else void loadProposals()
   }
 
   return (
@@ -201,7 +227,7 @@ export default function ProposalsPage() {
                     {proposal.status}
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 12px', fontSize: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 12px', fontSize: 13, marginBottom: 12 }}>
                   <strong>Toko:</strong>
                   <span>{proposal.toko_nama}{proposal.toko_id === null && ' (Custom)'}</span>
                   <strong>Menu:</strong>
@@ -213,6 +239,80 @@ export default function ProposalsPage() {
                     </>
                   )}
                 </div>
+
+                {proposal.status === 'pending' && (
+                  editingId === proposal.id ? (
+                    <div style={{ background: '#FFFBE6', border: '2px solid #000', padding: 12, marginTop: 8 }}>
+                      <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700 }}>Tentukan Harga & Jumlah untuk ACC ke Rekap Order:</p>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                        <label style={{ fontSize: 12, fontWeight: 700 }}>
+                          Harga per item (Rp):
+                          <input
+                            type="number"
+                            value={harga || ''}
+                            onChange={(e) => setHarga(Number(e.target.value))}
+                            placeholder="Contoh: 35000"
+                            style={{ display: 'block', padding: 6, border: '2px solid #000', width: 140, marginTop: 4, fontWeight: 700 }}
+                          />
+                        </label>
+                        <label style={{ fontSize: 12, fontWeight: 700 }}>
+                          Qty:
+                          <input
+                            type="number"
+                            min="1"
+                            value={qty}
+                            onChange={(e) => setQty(Math.max(1, Number(e.target.value)))}
+                            style={{ display: 'block', padding: 6, border: '2px solid #000', width: 70, marginTop: 4, fontWeight: 700 }}
+                          />
+                        </label>
+                      </div>
+                      {harga > 0 && (
+                        <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700 }}>
+                          Fee per item: {formatRupiah(hitungFee(harga))} | Total Order: {formatRupiah((harga + hitungFee(harga)) * qty)}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          type="button"
+                          className="nb-btn nb-btn--primary"
+                          onClick={() => void approveProposal(proposal)}
+                          disabled={submitting || harga <= 0}
+                          style={{ fontSize: 12 }}
+                        >
+                          ACC & Masukkan ke Order
+                        </button>
+                        <button
+                          type="button"
+                          className="nb-btn"
+                          onClick={() => setEditingId(null)}
+                          disabled={submitting}
+                          style={{ fontSize: 12 }}
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className="nb-btn nb-btn--primary"
+                        onClick={() => { setEditingId(proposal.id); setHarga(0); setQty(1) }}
+                        style={{ fontSize: 12 }}
+                      >
+                        ACC Proposal
+                      </button>
+                      <button
+                        type="button"
+                        className="nb-btn"
+                        onClick={() => void rejectProposal(proposal.id)}
+                        style={{ fontSize: 12, background: '#FF5C5C', color: '#fff' }}
+                      >
+                        Tolak
+                      </button>
+                    </div>
+                  )
+                )}
               </div>
             ))}
           </div>

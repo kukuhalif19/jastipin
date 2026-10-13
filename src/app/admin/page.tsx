@@ -22,6 +22,7 @@ type Order = {
   items: OrderItem[]
   total: number
   wa_target: string
+  status_bayar: 'belum_bayar' | 'sudah_bayar'
   created_at: string
 }
 
@@ -62,7 +63,8 @@ export default function AdminPage() {
 
     const { data, error: queryError } = await supabase
       .from('orders')
-      .select('id, nama, alamat, items, total, wa_target, created_at')
+      .select('id, nama, alamat, items, total, wa_target, status_bayar, created_at')
+      .eq('status_bayar', 'belum_bayar')
       .order('created_at', { ascending: false })
 
     if (queryError) {
@@ -94,10 +96,17 @@ export default function AdminPage() {
   const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0)
   const totalUnits = orders.reduce((sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + (Number(item.qty) || 0), 0), 0)
 
+  async function markAsPaid(orderId: string) {
+    if (!supabase || !confirm('Tandai order ini sudah bayar?')) return
+    const { error: updateError } = await supabase.from('orders').update({ status_bayar: 'sudah_bayar' }).eq('id', orderId)
+    if (updateError) setError(`Gagal memperbarui status bayar: ${updateError.message}`)
+    else void loadOrders()
+  }
+
   function exportCsv() {
-    const rows = [['Tanggal', 'Nama', 'Alamat', 'Toko', 'Menu', 'Qty', 'Total', 'Admin WA']]
+    const rows = [['Tanggal', 'Nama', 'Alamat', 'Toko', 'Menu', 'Qty', 'Total', 'Status Bayar', 'Admin WA']]
     orders.forEach((order) => order.items.forEach((item) => rows.push([
-      formatDate(order.created_at), order.nama, order.alamat, item.toko || '', item.nama || '', String(item.qty || 0), String(order.total), order.wa_target,
+      formatDate(order.created_at), order.nama, order.alamat, item.toko || '', item.nama || '', String(item.qty || 0), String(order.total), order.status_bayar, order.wa_target,
     ])))
     const blob = new Blob([rows.map((row) => row.map(csvCell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -121,9 +130,10 @@ export default function AdminPage() {
             <p style={{ fontSize: 13, color: '#555', fontWeight: 600, margin: '6px 0 0' }}>Daftar belanja per toko dan daftar packing per pemesan.</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link href="/admin/orderan" className="nb-btn nb-btn--primary">Orderan (Sudah Bayar)</Link>
             <Link href="/admin/proposals" className="nb-btn nb-btn--secondary">Pengajuan Menu</Link>
             <button type="button" className="nb-btn" onClick={() => void loadOrders()} disabled={loading}>Refresh</button>
-            <button type="button" className="nb-btn nb-btn--primary" onClick={exportCsv} disabled={orders.length === 0}>Export CSV</button>
+            <button type="button" className="nb-btn" onClick={exportCsv} disabled={orders.length === 0}>Export CSV</button>
           </div>
         </div>
 
@@ -154,6 +164,14 @@ export default function AdminPage() {
               <p style={{ fontSize: 12, margin: '0 0 8px', lineHeight: 1.5 }}>{order.alamat}</p>
               {order.items.map((item, index) => <div key={`${order.id}-${index}`} style={{ fontSize: 13, fontWeight: 700, borderTop: '1px solid #bbb', padding: '8px 0' }}>{item.nama} — {item.toko} × {item.qty}</div>)}
               <strong style={{ display: 'block', marginTop: 6 }}>Total: {formatRupiah(order.total)}</strong>
+              <button
+                type="button"
+                className="nb-btn nb-btn--primary"
+                onClick={() => void markAsPaid(order.id)}
+                style={{ marginTop: 10, fontSize: 12 }}
+              >
+                Tandai Sudah Bayar
+              </button>
             </section>
           ))}
         </>}
