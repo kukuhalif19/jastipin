@@ -111,77 +111,55 @@ D:/Project/jastip/jastipin/
 
 ---
 
-## Wave 1: Seed Data & Deploy (PENDING)
+## Wave 4: Admin Proposal dan Status Pembayaran ✓ IMPLEMENTASI SELESAI
 
-**Yang perlu dilakukan:**
-- [ ] Buat Supabase project (gratis tier)
-- [ ] Copy DB credentials ke `.env.local`
-- [ ] Run SQL schema (DATABASE.md) di Supabase SQL editor
-- [ ] Generate 8 hero images (AI atau placeholder per toko)
-- [ ] Deploy ke Vercel (connect GitHub repo)
-- [ ] Test live: katalog → pesan → WhatsApp terima + DB insert
+**Status:** Implementasi selesai 13 Oktober 2026; migration Supabase masih perlu dijalankan manual.
+
+### Alur yang tersedia
+1. Pelanggan mengirim pengajuan menu melalui `/propose`.
+2. Admin membuka `/admin/proposals`, lalu memilih ACC atau Tolak.
+3. Saat ACC, admin wajib mengisi harga dan qty. Sistem menghitung fee: harga < Rp100.000 = Rp20.000; harga ≥ Rp100.000 = Rp30.000.
+4. Proposal ACC membuat order dengan `status_bayar = belum_bayar`, lalu muncul di `/admin`.
+5. Admin menekan **Tandai Sudah Bayar** di `/admin`; order berpindah ke `/admin/orderan`.
+6. `/admin/orderan` menyediakan rekap belanja per toko, packing per pemesan, export CSV, dan aksi mengembalikan order ke belum bayar jika salah klik.
+
+### File terkait
+- `src/app/admin/proposals/page.tsx` — filter dan aksi ACC/Tolak proposal.
+- `src/app/admin/page.tsx` — rekap order belum bayar dan perubahan status bayar.
+- `src/app/admin/orderan/page.tsx` — rekap order sudah bayar.
+- `supabase/migrations/20261013_add_status_bayar_and_updates.sql` — kolom, index, dan policy yang dibutuhkan.
+- `docs/DATABASE.md` — referensi schema database terbaru.
 
 ---
 
-## Wave 2–5 (Belum Dimulai)
+## Verifikasi
 
-- Wave 2: Form data diri + halaman review (UI polish)
-- Wave 3: Integrasi WhatsApp + simpan DB
-- Wave 4: UI/UX finalisasi (menunggu mockup desain Kukuh)
-- Wave 5: Testing + production deploy
+- `npm run build` berhasil setelah seluruh perubahan admin dan pembayaran.
+- Perubahan telah dipush ke GitHub: commit `ab2e082`.
+- Vercel akan deploy otomatis dari branch `main`.
 
 ---
 
-## Notes & Blockers
+## Blocker / Tindakan Manual Wajib
 
-### ✓ Selesai
-- Alur lengkap dari katalog → pesan
-- Kalkulasi fee per item (<100k = 20k, ≥100k = 30k)
-- LocalStorage persistence untuk keranjang
-- No emoji policy (semua ikon pakai SVG)
-- Neo-Brutalist design system applied
+1. Buka **Supabase → SQL Editor → New query**.
+2. Buka file `supabase/migrations/20261013_add_status_bayar_and_updates.sql`.
+3. Salin seluruh SQL file tersebut, paste ke SQL Editor, lalu jalankan.
+4. Tes alur: proposal → ACC (isi harga dan qty) → `/admin` → Tandai Sudah Bayar → `/admin/orderan`.
 
-### ⏳ Blocked / Awaiting
-- **Supabase credentials:** Tunggu Kukuh setup project + copy URL & anon key ke `.env.local`
-- **Hero images per toko:** Toko warna placeholder sementara, perlu AI-generated atau real photos
-- **Production domain:** Domain custom (jika ada) bisa di-setup saat Wave 1 deploy
+> Dashboard saat ini memakai policy UPDATE anonim agar aksi admin client-side dapat berjalan. Jangan gunakan model akses ini untuk produksi publik jangka panjang; tambahkan autentikasi admin/PIN sebelum menangani data pelanggan secara luas.
 
 ---
 
 ## Command Penting
 
 ```bash
-# Development
 npm run dev
-
-# Build
 npm run build
-
-# Deploy (dari GitHub → Vercel otomatis)
 git push origin main
 ```
 
 ---
 
-## Aturan Kukuh Terpenuhi
-
-✓ **Rule #9:** Dokumentasi lengkap (`PRD.md`, `WAVES.md`, `DATABASE.md`)
-✓ **Rule #9.1:** Wave pengerjaan terstruktur dengan status per item
-✓ **Ponytail Lite:** Solusi minimal, tidak over-engineer (hanya 6 pages, 3 components core)
-✓ **No Emoji:** Semua ikon SVG inline
-✓ **Neo-Brutalist:** Design system applied konsisten
-
----
-
-## Next Steps
-
-1. Kukuh setup Supabase project (gratis, 2 menit)
-2. Masukkan credentials ke `.env.local`
-3. Jalankan SQL schema dari `DATABASE.md` di Supabase SQL editor
-4. Lanjut Wave 1 (seed data, generate images, deploy)
-
----
-
-**Last Updated:** 13 Oktober 2026, 06:53 WIB  
-**Author:** Hermes Agent + Kukuh  
-**Status:** Wave 0 ✓ Complete, Ready for Wave 1
+**Last Updated:** 13 Oktober 2026
+**Status:** Workflow proposal, order belum bayar, dan order sudah bayar selesai di kode; menunggu migration Supabase dan tes end-to-end.

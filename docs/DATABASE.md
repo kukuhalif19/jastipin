@@ -9,6 +9,7 @@ create table if not exists public.orders (
   items jsonb not null default '[]'::jsonb,
   total integer not null default 0,
   wa_target text not null,
+  status_bayar text not null default 'belum_bayar' check (status_bayar in ('belum_bayar', 'sudah_bayar')),
   created_at timestamptz not null default now()
 );
 
@@ -16,21 +17,54 @@ create table if not exists public.orders (
 alter table public.orders enable row level security;
 
 -- Policy: Publik boleh INSERT order baru (tanpa login)
-create policy "Allow public insert to orders"
-  on public.orders
-  for insert
-  to anon
-  with check (true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'orders' and policyname = 'Allow public insert to orders'
+  ) then
+    create policy "Allow public insert to orders"
+      on public.orders
+      for insert
+      to anon
+      with check (true);
+  end if;
+end $$;
 
 -- Policy: Admin boleh baca semua order (opsional, via service role key atau dashboard)
-create policy "Allow anon read orders"
-  on public.orders
-  for select
-  to anon
-  using (true);
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'orders' and policyname = 'Allow anon read orders'
+  ) then
+    create policy "Allow anon read orders"
+      on public.orders
+      for select
+      to anon
+      using (true);
+  end if;
+end $$;
+
+-- Policy: Update status order (misal status_bayar)
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'orders' and policyname = 'Allow anon update orders'
+  ) then
+    create policy "Allow anon update orders"
+      on public.orders
+      for update
+      to anon
+      using (true)
+      with check (true);
+  end if;
+end $$;
 
 -- Index untuk performa
 create index if not exists idx_orders_created_at on public.orders (created_at desc);
+create index if not exists idx_orders_status_bayar on public.orders (status_bayar);
 
 -- 2. Tabel Proposals (Pengajuan Menu dari Pelanggan)
 create table if not exists public.proposals (
@@ -53,6 +87,17 @@ create policy "proposals_select_own"
 
 create policy "proposals_insert_anon"
   on public.proposals for insert with check (true);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'proposals' and policyname = 'Allow anon update proposals'
+  ) then
+    create policy "Allow anon update proposals"
+      on public.proposals for update to anon using (true) with check (true);
+  end if;
+end $$;
 
 create index if not exists idx_proposals_created_at on public.proposals (created_at desc);
 create index if not exists idx_proposals_status on public.proposals (status);
