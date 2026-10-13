@@ -31,3 +31,29 @@ create policy "Allow anon read orders"
 
 -- Index untuk performa
 create index if not exists idx_orders_created_at on public.orders (created_at desc);
+
+-- 2. Tabel Proposals (Pengajuan Menu dari Pelanggan)
+create table if not exists public.proposals (
+  id uuid primary key default gen_random_uuid(),
+  nama text not null,
+  alamat text not null,
+  toko_id integer,
+  toko_nama text not null,
+  menu_diajukan text not null,
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected')),
+  wa_target text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.proposals enable row level security;
+
+create policy "proposals_select_own"
+  on public.proposals for select using (true);
+
+create policy "proposals_insert_anon"
+  on public.proposals for insert with check (true);
+
+create index if not exists idx_proposals_created_at on public.proposals (created_at desc);
+create index if not exists idx_proposals_status on public.proposals (status);
+create index if not exists idx_proposals_wa_target on public.proposals (wa_target);
