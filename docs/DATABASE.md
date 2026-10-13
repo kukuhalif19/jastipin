@@ -6,6 +6,7 @@ create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   nama text not null,
   alamat text not null,
+  whatsapp text,
   items jsonb not null default '[]'::jsonb,
   total integer not null default 0,
   wa_target text not null,
