@@ -1,11 +1,18 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
 import { IconCart } from './Icons'
 
 export function Header() {
   const { state } = useCart()
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const totalItems = state.items.reduce((sum, i) => sum + i.qty, 0)
 
   return (
@@ -28,32 +35,42 @@ export function Header() {
           </p>
         </Link>
 
-        <Link href="/cart" style={{ textDecoration: 'none', color: '#111', position: 'relative' }}>
-          <button className="nb-btn" style={{ padding: '10px 14px' }}>
-            <IconCart size={18} />
-            {totalItems > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: -6,
-                  right: -6,
-                  background: '#FF5C5C',
-                  color: '#fff',
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  border: '2px solid #000',
-                }}
-              >
-                {totalItems > 9 ? '9+' : totalItems}
-              </span>
-            )}
-          </button>
+        <Link
+          href="/cart"
+          className="nb-btn"
+          style={{
+            textDecoration: 'none',
+            color: '#111',
+            position: 'relative',
+            padding: '10px 14px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <IconCart size={18} />
+          {mounted && totalItems > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: -6,
+                right: -6,
+                background: '#FF5C5C',
+                color: '#fff',
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: 800,
+                border: '2px solid #000',
+              }}
+            >
+              {totalItems > 9 ? '9+' : totalItems}
+            </span>
+          )}
         </Link>
       </div>
     </header>
