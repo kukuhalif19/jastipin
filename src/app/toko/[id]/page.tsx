@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { TOKO_LIST, PRODUCTS, formatRupiah, hitungFee } from '@/lib/data/products'
+import { TOKO_LIST, PRODUCTS, formatRupiah } from '@/lib/data/products'
+import { hitungFeePerToko } from '@/lib/data/fee-calculator'
 import { Header } from '@/components/Header'
 import { AddToCartButton } from '@/components/AddToCartButton'
 import { IconArrowLeft, IconAlert } from '@/components/Icons'
@@ -113,7 +114,8 @@ export default async function TokoPage({ params }: { params: Promise<{ id: strin
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {produkToko.map((produk) => {
-            const fee = hitungFee(produk.harga)
+            // Fee dihitung per toko berdasarkan subtotal, tapi di page ini cukup tampilkan estimasi
+            const feeEstimasi = hitungFeePerToko(produk.harga)
             return (
               <article key={produk.id} className="nb-card" style={{ padding: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -130,7 +132,7 @@ export default async function TokoPage({ params }: { params: Promise<{ id: strin
                       <span style={{ fontWeight: 500, color: '#555' }}> / {produk.satuan}</span>
                     </p>
                     <p style={{ fontSize: 11, color: '#555', margin: 0, fontWeight: 600 }}>
-                      + Fee jastip {formatRupiah(fee)}
+                      + Fee jastip estimasi {formatRupiah(feeEstimasi)} (tergantung total toko)
                     </p>
 
                     {produk.catatan && (

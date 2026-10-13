@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { IconArrowLeft, IconReceipt } from '@/components/Icons'
-import { hitungFee, formatRupiah } from '@/lib/data/products'
+import { hitungFeePerToko, formatRupiah } from '@/lib/data/fee-calculator'
 import { supabase } from '@/lib/supabase'
 
 type Proposal = {
@@ -90,7 +90,7 @@ export default function ProposalsPage() {
   async function approveProposal(proposal: Proposal) {
     if (!supabase || harga <= 0 || qty < 1) return
     setSubmitting(true)
-    const fee = hitungFee(harga)
+    const fee = hitungFeePerToko(harga)
     const { error: orderError } = await supabase.from('orders').insert({
       nama: proposal.nama,
       alamat: proposal.alamat,
@@ -268,7 +268,7 @@ export default function ProposalsPage() {
                       </div>
                       {harga > 0 && (
                         <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700 }}>
-                          Fee per item: {formatRupiah(hitungFee(harga))} | Total Order: {formatRupiah((harga + hitungFee(harga)) * qty)}
+                          Fee per toko (berdasarkan subtotal): {formatRupiah(hitungFeePerToko(harga))} | Total Order: {formatRupiah((harga + hitungFeePerToko(harga)) * qty)}
                         </p>
                       )}
                       <div style={{ display: 'flex', gap: 8 }}>

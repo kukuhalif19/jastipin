@@ -152,10 +152,12 @@ export const PRODUCTS: Product[] = [
   { id: 't8-p5', tokoId: 8, tokoNama: 'Bandung Cheesecuit', nama: 'Bongsor Red Velvet', harga: 60000, satuan: 'box' },
 ]
 
-// Kalkulasi fee per item
-export function hitungFee(harga: number): number {
-  return harga < 100000 ? 20000 : 30000
-}
+// ─── HITUNG FEE (DI-COMMENT / DEPRECATED) ──────────────────────────────────
+// Gunakan helper terpusat di `@/lib/data/fee-calculator`: `hitungFeePerToko`, `hitungTotalFee`
+//
+// export function hitungFee(harga: number): number {
+//   return harga < 100000 ? 20000 : 30000
+// }
 
 export function formatRupiah(num: number): string {
   return 'Rp ' + num.toLocaleString('id-ID')

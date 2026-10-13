@@ -77,11 +77,7 @@ export default function CartPage() {
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               {items.map((item) => {
-                const isMurah = item.product.harga <= 50000
-                const itemFee = isMurah ? 0 : (item.product.harga < 100000 ? 20000 : 30000)
-                const lineTotal = isMurah
-                  ? item.product.harga * item.qty
-                  : (item.product.harga + itemFee) * item.qty
+                const lineTotal = item.product.harga * item.qty
                 return (
                   <article key={item.product.id} className="nb-card" style={{ padding: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
@@ -129,9 +125,7 @@ export default function CartPage() {
 
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontSize: 10, color: '#555', margin: 0, fontWeight: 700 }}>
-                          {isMurah
-                            ? `${formatRupiah(item.product.harga)} × ${item.qty} (fee gabung toko)`
-                            : `${formatRupiah(item.product.harga)} + fee ${formatRupiah(itemFee)} × ${item.qty}`}
+                          {formatRupiah(item.product.harga)} × {item.qty}
                         </p>
                         <p style={{ fontSize: 16, fontWeight: 900, margin: 0 }}>
                           {formatRupiah(lineTotal)}

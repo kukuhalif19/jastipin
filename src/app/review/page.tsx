@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
 import { formatRupiah, getRandomAdmin } from '@/lib/data/products'
-import { hitungTotalFee, hitungFeeDetail, hitungFeeKelompokMurah, hitungFee } from '@/lib/data/fee-calculator'
+import { hitungTotalFee, hitungFeeDetail } from '@/lib/data/fee-calculator'
 import { supabase } from '@/lib/supabase'
 import { Header } from '@/components/Header'
 import {
@@ -57,13 +57,8 @@ export default function ReviewPage() {
     lines.push('Pesanan:')
     items.forEach((i) => {
       const fee = feeDetail.get(i.product.id) || 0
-      const isMurah = i.product.harga <= 50000
       lines.push(`- ${i.product.nama} (${i.product.tokoNama}) x${i.qty}`)
-      if (isMurah) {
-        lines.push(`  ${formatRupiah(i.product.harga)} × ${i.qty} = ${formatRupiah(i.product.harga * i.qty)} (fee gabung toko)`)
-      } else {
-        lines.push(`  ${formatRupiah(i.product.harga)} + fee ${formatRupiah(fee)} = ${formatRupiah((i.product.harga + fee) * i.qty)}`)
-      }
+      lines.push(`  ${formatRupiah(i.product.harga)} + fee ${formatRupiah(fee)} = ${formatRupiah((i.product.harga + fee) * i.qty)}`)
     })
     lines.push('')
     lines.push(`Subtotal : ${formatRupiah(subtotal)}`)
@@ -92,7 +87,7 @@ export default function ReviewPage() {
             toko: i.product.tokoNama,
             harga: i.product.harga,
             qty: i.qty,
-            fee: hitungFee(i.product.harga),
+            fee: feeDetail.get(i.product.id) || 0,
           })),
           total: grandTotal,
           wa_target: admin.nama,
@@ -237,11 +232,7 @@ export default function ReviewPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {items.map((item) => {
-            const isMurah = item.product.harga <= 50000
-            const fee = isMurah ? 0 : (item.product.harga < 100000 ? 20000 : 30000)
-            const lineTotal = isMurah
-              ? item.product.harga * item.qty
-              : (item.product.harga + fee) * item.qty
+            const lineTotal = item.product.harga * item.qty
             return (
               <div key={item.product.id} className="nb-card" style={{ padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
@@ -253,9 +244,7 @@ export default function ReviewPage() {
                       {item.product.tokoNama}
                     </p>
                     <p style={{ fontSize: 11, color: '#555', margin: 0, fontWeight: 600 }}>
-                      {isMurah
-                        ? `${formatRupiah(item.product.harga)} × ${item.qty} (fee gabung toko)`
-                        : `${formatRupiah(item.product.harga)} + fee ${formatRupiah(fee)} × ${item.qty}`}
+                      {formatRupiah(item.product.harga)} × {item.qty}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
