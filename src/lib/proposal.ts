@@ -48,6 +48,23 @@ export async function submitProposal(payload: ProposalPayload): Promise<Proposal
         saved = false
       } else {
         saved = true
+
+        // Kirim notifikasi Discord secara otomatis
+        try {
+          await fetch('/api/notify-proposal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nama,
+              alamat,
+              tokoNama,
+              menuDiajukan,
+              waTarget: admin.wa,
+            }),
+          })
+        } catch (discordErr) {
+          console.warn('Discord proposal notification failed:', discordErr)
+        }
       }
     } catch (err) {
       console.error('[submitProposal] Exception:', err)
