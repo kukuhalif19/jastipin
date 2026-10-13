@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
-import { hitungFee, formatRupiah } from '@/lib/data/products'
+import { formatRupiah } from '@/lib/data/products'
+import { hitungTotalFee, hitungFeeDetail } from '@/lib/data/fee-calculator'
 import { Header } from '@/components/Header'
 import { IconArrowLeft, IconArrowRight, IconPlus, IconMinus, IconTrash, IconCart } from '@/components/Icons'
 
@@ -10,8 +11,18 @@ export default function CartPage() {
   const { state, dispatch } = useCart()
   const items = state.items
 
+  const cartItems = items.map((i) => ({
+    id: i.product.id,
+    tokoId: i.product.tokoId,
+    tokoNama: i.product.tokoNama,
+    nama: i.product.nama,
+    harga: i.product.harga,
+    qty: i.qty,
+  }))
+
   const subtotal = items.reduce((sum, i) => sum + i.product.harga * i.qty, 0)
-  const totalFee = items.reduce((sum, i) => sum + hitungFee(i.product.harga) * i.qty, 0)
+  const totalFee = hitungTotalFee(cartItems)
+  const feeDetail = hitungFeeDetail(cartItems)
   const grandTotal = subtotal + totalFee
 
   return (
@@ -66,8 +77,11 @@ export default function CartPage() {
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               {items.map((item) => {
-                const fee = hitungFee(item.product.harga)
-                const lineTotal = (item.product.harga + fee) * item.qty
+                const isMurah = item.product.harga <= 50000
+                const itemFee = isMurah ? 0 : (item.product.harga < 100000 ? 20000 : 30000)
+                const lineTotal = isMurah
+                  ? item.product.harga * item.qty
+                  : (item.product.harga + itemFee) * item.qty
                 return (
                   <article key={item.product.id} className="nb-card" style={{ padding: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
@@ -115,7 +129,9 @@ export default function CartPage() {
 
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontSize: 10, color: '#555', margin: 0, fontWeight: 700 }}>
-                          {formatRupiah(item.product.harga)} + fee {formatRupiah(fee)} × {item.qty}
+                          {isMurah
+                            ? `${formatRupiah(item.product.harga)} × ${item.qty} (fee gabung toko)`
+                            : `${formatRupiah(item.product.harga)} + fee ${formatRupiah(itemFee)} × ${item.qty}`}
                         </p>
                         <p style={{ fontSize: 16, fontWeight: 900, margin: 0 }}>
                           {formatRupiah(lineTotal)}
