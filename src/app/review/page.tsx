@@ -78,6 +78,7 @@ export default function ReviewPage() {
 
     const admin = getRandomAdmin()
     const pesan = buildWaMessage()
+    const whatsapp = localStorage.getItem('jastipin_whatsapp') || ''
 
     // Simpan ke Supabase (jika terkonfigurasi)
     if (supabase) {
@@ -85,6 +86,7 @@ export default function ReviewPage() {
         const { error } = await supabase.from('orders').insert({
           nama,
           alamat,
+          whatsapp,
           items: items.map((i) => ({
             nama: i.product.nama,
             toko: i.product.tokoNama,
@@ -97,6 +99,32 @@ export default function ReviewPage() {
         })
         if (error) {
           setNotif('Pesanan gagal disimpan ke database, tapi WhatsApp tetap dibuka.')
+        } else {
+          // Kirim notifikasi ke Discord
+          try {
+            await fetch('/api/notify-order', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                nama,
+                alamat,
+                whatsapp,
+                items: items.map((i) => ({
+                  nama: i.product.nama,
+                  tokoNama: i.product.tokoNama,
+                  harga: i.product.harga,
+                  qty: i.qty,
+                  fee: feeDetail.get(i.product.id) || 0,
+                })),
+                total: grandTotal,
+                totalFee,
+                subtotal,
+                waTarget: admin.wa,
+              }),
+            })
+          } catch (discordErr) {
+            console.warn('Discord notification failed:', discordErr)
+          }
         }
       } catch {
         setNotif('Pesanan gagal disimpan ke database, tapi WhatsApp tetap dibuka.')
@@ -113,6 +141,7 @@ export default function ReviewPage() {
     dispatch({ type: 'CLEAR_CART' })
     localStorage.removeItem('jastipin_nama')
     localStorage.removeItem('jastipin_alamat')
+    localStorage.removeItem('jastipin_whatsapp')
     setSent(true)
     setSending(false)
   }

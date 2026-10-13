@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
-import { IconArrowLeft, IconReceipt } from '@/components/Icons'
+import { IconArrowLeft, IconReceipt, IconPhone, IconWhatsApp } from '@/components/Icons'
 import { formatRupiah } from '@/lib/data/products'
 import { supabase } from '@/lib/supabase'
 
@@ -19,6 +19,7 @@ type Order = {
   id: string
   nama: string
   alamat: string
+  whatsapp?: string
   items: OrderItem[]
   total: number
   wa_target: string
@@ -63,7 +64,7 @@ export default function OrderanPage() {
 
     const { data, error: queryError } = await supabase
       .from('orders')
-      .select('id, nama, alamat, items, total, wa_target, status_bayar, created_at')
+      .select('id, nama, alamat, whatsapp, items, total, wa_target, status_bayar, created_at')
       .eq('status_bayar', 'sudah_bayar')
       .order('created_at', { ascending: false })
 
@@ -104,9 +105,9 @@ export default function OrderanPage() {
   }
 
   function exportCsv() {
-    const rows = [['Tanggal', 'Nama', 'Alamat', 'Toko', 'Menu', 'Qty', 'Total', 'Admin WA']]
+    const rows = [['Tanggal', 'Nama', 'WhatsApp', 'Alamat', 'Toko', 'Menu', 'Qty', 'Total', 'Status Bayar', 'Admin WA']]
     orders.forEach((order) => order.items.forEach((item) => rows.push([
-      formatDate(order.created_at), order.nama, order.alamat, item.toko || '', item.nama || '', String(item.qty || 0), String(order.total), order.wa_target,
+      formatDate(order.created_at), order.nama, order.whatsapp || '-', order.alamat, item.toko || '', item.nama || '', String(item.qty || 0), String(order.total), order.status_bayar, order.wa_target,
     ])))
     const blob = new Blob([rows.map((row) => row.map(csvCell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -157,22 +158,55 @@ export default function OrderanPage() {
               <h2 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 10px', textTransform: 'uppercase' }}>{store.toko}</h2>
               {[...store.items.entries()].map(([menu, detail]) => <div key={menu} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, borderTop: '1px solid #bbb', padding: '9px 0', fontSize: 13, fontWeight: 700 }}><span>{menu}</span><span>{detail.qty} unit</span></div>)}
             </section>
-          )) : orders.map((order) => (
-            <section key={order.id} className="nb-card" style={{ padding: 16, marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}><strong>{order.nama}</strong><span style={{ fontSize: 11, color: '#555' }}>{formatDate(order.created_at)}</span></div>
-              <p style={{ fontSize: 12, margin: '0 0 8px', lineHeight: 1.5 }}>{order.alamat}</p>
-              {order.items.map((item, index) => <div key={`${order.id}-${index}`} style={{ fontSize: 13, fontWeight: 700, borderTop: '1px solid #bbb', padding: '8px 0' }}>{item.nama} — {item.toko} × {item.qty}</div>)}
-              <strong style={{ display: 'block', marginTop: 6 }}>Total: {formatRupiah(order.total)}</strong>
-              <button
-                type="button"
-                className="nb-btn"
-                onClick={() => void markAsUnpaid(order.id)}
-                style={{ marginTop: 10, fontSize: 12 }}
-              >
-                Kembalikan ke Belum Bayar
-              </button>
-            </section>
-          ))}
+          )) : orders.map((order) => {
+            let waClean = (order.whatsapp || '').replace(/\D/g, '')
+            if (waClean.startsWith('0')) waClean = '62' + waClean.slice(1)
+            const waChatUrl = waClean ? `https://wa.me/${waClean}?text=${encodeURIComponent(`Halo Kak ${order.nama}, konfirmasi pesanan jastip Kakak sudah lunas/tercatat ya!`)}` : null
+
+            return (
+              <section key={order.id} className="nb-card" style={{ padding: 16, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <div>
+                    <strong>{order.nama}</strong>
+                    {order.whatsapp && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#0066cc', fontWeight: 700, marginTop: 2 }}>
+                        <IconPhone size={13} />
+                        <span>{order.whatsapp}</span>
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, color: '#555' }}>{formatDate(order.created_at)}</span>
+                </div>
+                <p style={{ fontSize: 12, margin: '0 0 8px', lineHeight: 1.5 }}>{order.alamat}</p>
+                {order.items.map((item, index) => <div key={`${order.id}-${index}`} style={{ fontSize: 13, fontWeight: 700, borderTop: '1px solid #bbb', padding: '8px 0' }}>{item.nama} — {item.toko} × {item.qty}</div>)}
+                <strong style={{ display: 'block', marginTop: 6 }}>Total: {formatRupiah(order.total)}</strong>
+                
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="nb-btn"
+                    onClick={() => void markAsUnpaid(order.id)}
+                    style={{ fontSize: 12 }}
+                  >
+                    Kembalikan ke Belum Bayar
+                  </button>
+
+                  {waChatUrl && (
+                    <a
+                      href={waChatUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="nb-btn"
+                      style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', background: '#25D366', color: '#fff', border: '2px solid #000' }}
+                    >
+                      <IconWhatsApp size={14} />
+                      Chat Pembeli
+                    </a>
+                  )}
+                </div>
+              </section>
+            )
+          })}
         </>}
       </main>
     </>
